@@ -7,6 +7,11 @@ Capabilities include: setting the voltage range for the AIN (+/- 10V, +/- 1V, +/
 Structure of this library is identical to that of [ADAM-driver](https://github.com/spanio/ADAM-driver) and [NIDAQ-driver](https://github.com/spanio/NIDAQ-driver), to allow for integration into [nexo](https://github.com/spanio/nexo) and [ScriptSynth](https://github.com/spanio/ScriptSynth).
 
 
+# Requirements
+```
+pip install LabJackPython ljm
+```
+
 # Example
 ```python
 from Python import Python something something here
