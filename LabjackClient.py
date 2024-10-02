@@ -28,23 +28,22 @@ class LabJackT7Driver:
         except ljm.LJMError as e:
             raise Exception(f"Failed to set voltage range: {e}")
 
-    def configure_negative_channel(self, channel, negative_channel="GND"):
-        """Configure the negative channel for differential readings (default to GND)."""
-        if negative_channel == "GND":
-            negative_channel_val = 199  # GND according to LabJack documentation
+    def configure_measurement_type(self, channel, measurement_type="single-ended", differential_negative_channel=None):
+        """Configure the measurement type for a specific channel (single-ended or differential)."""
+        if measurement_type == "single-ended":
+            negative_channel_val = 199  # GND for single-ended
+        elif measurement_type == "differential":
+            if differential_negative_channel is None:
+                raise ValueError("You must specify a valid negative channel for differential measurements.")
+            negative_channel_val = differential_negative_channel
         else:
-            try:
-                negative_channel_val = int(negative_channel)
-                if negative_channel_val < 0 or negative_channel_val >= self.num_analog_inputs:
-                    raise ValueError("Invalid negative channel")
-            except ValueError:
-                raise Exception("Negative channel must be either 'GND' or a valid AIN channel number")
+            raise ValueError("Invalid measurement type. Use 'single-ended' or 'differential'.")
 
         try:
             ljm.eWriteName(self.handle, f"AIN{channel}_NEGATIVE_CH", negative_channel_val)
-            print(f"Configured AIN{channel} negative channel to {negative_channel}")
+            print(f"Configured AIN{channel} for {measurement_type} measurement with negative channel {negative_channel_val}")
         except ljm.LJMError as e:
-            raise Exception(f"Failed to configure negative channel: {e}")
+            raise Exception(f"Failed to configure measurement type: {e}")
 
     def read_samples(self, channels=None):
         """Read analog input values from specified channels."""
@@ -70,24 +69,22 @@ class LabJackT7Driver:
         print("Closed LabJack connection.")
 
 
-# Example usage of the LabJackT7Driver
 if __name__ == "__main__":
     try:
         # Create LabJack T7 driver instance using specific IP address
         labjack = LabJackT7Driver(ip_address="172.18.120.132")
 
-        # Configure analog input ranges and negative channels
+        # Configure analog input ranges and negative channels for single-ended measurements
         labjack.set_range(0, "10V")
-        labjack.configure_negative_channel(0, "GND")
+        labjack.configure_measurement_type(0, measurement_type="single-ended")
+
+        # Configure differential measurement for AIN2 with AIN3 as the negative channel
+        labjack.set_range(2, "10V")
+        labjack.configure_measurement_type(2, measurement_type="differential", differential_negative_channel=3)
 
         # Read analog values from the first 4 channels
         analog_values = labjack.read_samples([f"AIN{i}" for i in range(4)])
         print("Analog Input Values:", analog_values)
 
-        # Set digital output on FIO1 (as an example)
-        labjack.write_digital_output(1, 1)
-
     except Exception as e:
         print(f"Error: {e}")
-
-
