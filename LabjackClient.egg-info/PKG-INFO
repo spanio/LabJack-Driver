@@ -1,9 +1,23 @@
+Metadata-Version: 2.1
+Name: LabjackClient
+Version: 0.1.0
+Summary: LabJack T7 driver package for Python
+Home-page: https://github.com/spanio/Labjack-Driver
+Author: Brian Benchoff
+Author-email: brian.benchoff@span.io
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: labjack-ljm
+
 # LabJack-Driver
 
 This is a driver for the LabJack T7. Currently, this hardware only reads the analog inputs of the LabJack over Ethernet.
 
 ## Capabilities
-- **Set Voltage Range**: Supports setting the voltage range for analog input channels (AIN) to ±10V, ±1V, ±0.1V, or ±0.01V.
+- **Set Voltage Range**: Supports setting the voltage range for analog input channels (AIN) to Â±10V, Â±1V, Â±0.1V, or Â±0.01V.
 - **Single-Ended (GND-Referenced) Measurements**: Perform single-ended readings, where the input is referenced to GND.
 - **Differential Measurements**: Perform differential readings, where one analog input is referenced to another input (e.g., AIN2 is referenced to AIN3).
 - The structure of this library is identical to that of [ADAM-driver](https://github.com/spanio/ADAM-driver) and [NIDAQ-driver](https://github.com/spanio/NIDAQ-driver), allowing easy integration into [nexo](https://github.com/spanio/nexo) and [ScriptSynth](https://github.com/spanio/ScriptSynth).
@@ -56,7 +70,7 @@ LABJACK_IP = "172.18.120.132"
 client = LabJackT7Driver(ip_address=LABJACK_IP)
 
 try:
-    # Configure the voltage range for AIN0 to ±10V and set the negative channel to GND (single-ended)
+    # Configure the voltage range for AIN0 to Â±10V and set the negative channel to GND (single-ended)
     client.set_range(0, "10V")
     client.configure_measurement_type(0, measurement_type="single-ended")
 

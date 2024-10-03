@@ -1,0 +1,9 @@
+README.md
+setup.py
+LabjackClient/LabJackT7Driver.py
+LabjackClient/__init__.py
+LabjackClient.egg-info/PKG-INFO
+LabjackClient.egg-info/SOURCES.txt
+LabjackClient.egg-info/dependency_links.txt
+LabjackClient.egg-info/requires.txt
+LabjackClient.egg-info/top_level.txt
