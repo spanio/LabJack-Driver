@@ -8,7 +8,7 @@ metadata: This is a test for LabJack T7 device using multiple channels.
 hardware:
   - name: LabJack
     IP: 172.18.120.132
-    Voltage_range: "10V"  # Configuring all channels with a 10V range
+    Voltage_range: "1V"
     Channels:
       Channel 0:
         name: Voltage_1
@@ -17,9 +17,6 @@ hardware:
         RMS: true
       Channel 2:
         name: Voltage_2
-        type: single-ended
-        RMS: false
-      Channel 3:
-        name: Voltage_3
-        type: single-ended
+        type: differential
+        negative_channel: 3
         RMS: true
