@@ -119,7 +119,7 @@ class LabJackT7Driver:
         self.channel_rms_flags[channel] = rms_enabled
 
  def read_samples(self):
-    
+
     results = {}
 
     for channel in range(self.num_analog_inputs):
@@ -131,7 +131,6 @@ class LabJackT7Driver:
                     logging.info(f"Read FlexRMS value for AIN{channel}: {value}")
                     value = abs(value)  # Ensure the FlexRMS value is non-negative
                 except ljm.LJMError as e:
-                    # Check if the specific error is "AIN_EF_COULD_NOT_FIND_PERIOD"
                     if "AIN_EF_COULD_NOT_FIND_PERIOD" in str(e):
                         logging.warning(f"Could not find valid FlexRMS period for AIN{channel}. Returning 0.")
                         value = 0  # Return 0 or a default value
@@ -147,7 +146,23 @@ class LabJackT7Driver:
             value *= scaling_factor
 
             results[f"AIN{channel}"] = value
+
         except ljm.LJMError as e:
-            raise Exception(f"Failed to read samples for AIN{channel}: {e}")
-    
+            logging.error(f"Error encountered while reading from AIN{channel}: {e}")
+            # Restart the device to recover from the error
+            self.restart_device()
+            break  # Exit the loop to avoid further issues in this read cycle
+
     return results
+
+def restart_device(self):
+    """
+    Attempt to restart the LabJack device connection.
+    """
+    try:
+        logging.info("Restarting LabJack connection...")
+        self.close()  # Close the existing connection
+        self.start()  # Re-open the connection
+        logging.info("LabJack connection restarted successfully.")
+    except ljm.LJMError as e:
+        logging.error(f"Failed to restart LabJack connection: {e}")
