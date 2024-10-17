@@ -15,10 +15,17 @@ class LabJackT7Driver:
         self.num_analog_inputs = 16  # Default for 16 analog inputs
         self.channel_rms_flags = {}  # Store per-channel RMS flags
         self.channel_types = {}  # Store channel measurement types (single-ended or differential)
+        self.channel_scaling_factors = {}  # Store per-channel scaling factors
         self.voltage_range = voltage_range
         self.ip_address = ip_address
         self.connection_type = connection_type
         self.resolution_index = 0  # Auto-resolution by default
+
+
+    def set_scaling_factor(self, channel, scaling_factor):
+        self.channel_scaling_factors[channel] = scaling_factor
+        logging.info(f"Set scaling factor for AIN{channel} to {scaling_factor}")
+
 
     def start(self):
         try:
@@ -114,8 +121,7 @@ class LabJackT7Driver:
     def read_samples(self):
         """
         Read samples from the LabJack device. Uses built-in FlexRMS if enabled.
-        Ensures that FlexRMS values are always non-negative.
-        Handles LJMError 2588 (AIN_EF_COULD_NOT_FIND_PERIOD) by returning a default value (e.g., 0) if no period is found.
+        Applies scaling factors if they are set.
         """
         results = {}
 
@@ -137,6 +143,11 @@ class LabJackT7Driver:
                     # Read normal voltage value
                     value = ljm.eReadName(self.handle, f"AIN{channel}")
                     logging.info(f"Read value for AIN{channel}: {value}")
+
+                # Apply the scaling factor if it exists
+                scaling_factor = self.channel_scaling_factors.get(channel, 1)
+                value *= scaling_factor
+
                 results[f"AIN{channel}"] = value
             except ljm.LJMError as e:
                 raise Exception(f"Failed to read samples for AIN{channel}: {e}")
