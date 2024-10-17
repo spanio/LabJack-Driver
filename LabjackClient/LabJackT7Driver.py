@@ -118,38 +118,36 @@ class LabJackT7Driver:
         
         self.channel_rms_flags[channel] = rms_enabled
 
-    def read_samples(self):
-        """
-        Read samples from the LabJack device. Uses built-in FlexRMS if enabled.
-        Applies scaling factors if they are set.
-        """
-        results = {}
+ def read_samples(self):
+    
+    results = {}
 
-        for channel in range(self.num_analog_inputs):
-            try:
-                if self.channel_rms_flags.get(channel, False):
-                    # Try to read FlexRMS value from the AIN#_EF_READ_A register
-                    try:
-                        value = ljm.eReadName(self.handle, f"AIN{channel}_EF_READ_A")
-                        logging.info(f"Read FlexRMS value for AIN{channel}: {value}")
-                        value = abs(value)  # Ensure the FlexRMS value is non-negative
-                    except ljm.LJMError as e:
-                        if e.error == 2588:  # Handle AIN_EF_COULD_NOT_FIND_PERIOD
-                            logging.warning(f"Could not find valid FlexRMS period for AIN{channel}. Returning 0.")
-                            value = 0  # Return 0 or a default value
-                        else:
-                            raise e  # Re-raise other errors
-                else:
-                    # Read normal voltage value
-                    value = ljm.eReadName(self.handle, f"AIN{channel}")
-                    logging.info(f"Read value for AIN{channel}: {value}")
+    for channel in range(self.num_analog_inputs):
+        try:
+            if self.channel_rms_flags.get(channel, False):
+                # Try to read FlexRMS value from the AIN#_EF_READ_A register
+                try:
+                    value = ljm.eReadName(self.handle, f"AIN{channel}_EF_READ_A")
+                    logging.info(f"Read FlexRMS value for AIN{channel}: {value}")
+                    value = abs(value)  # Ensure the FlexRMS value is non-negative
+                except ljm.LJMError as e:
+                    # Check if the specific error is "AIN_EF_COULD_NOT_FIND_PERIOD"
+                    if "AIN_EF_COULD_NOT_FIND_PERIOD" in str(e):
+                        logging.warning(f"Could not find valid FlexRMS period for AIN{channel}. Returning 0.")
+                        value = 0  # Return 0 or a default value
+                    else:
+                        raise e  # Re-raise other errors
+            else:
+                # Read normal voltage value
+                value = ljm.eReadName(self.handle, f"AIN{channel}")
+                logging.info(f"Read value for AIN{channel}: {value}")
 
-                # Apply the scaling factor if it exists
-                scaling_factor = self.channel_scaling_factors.get(channel, 1)
-                value *= scaling_factor
+            # Apply the scaling factor if it exists
+            scaling_factor = self.channel_scaling_factors.get(channel, 1)
+            value *= scaling_factor
 
-                results[f"AIN{channel}"] = value
-            except ljm.LJMError as e:
-                raise Exception(f"Failed to read samples for AIN{channel}: {e}")
-        
-        return results
+            results[f"AIN{channel}"] = value
+        except ljm.LJMError as e:
+            raise Exception(f"Failed to read samples for AIN{channel}: {e}")
+    
+    return results
