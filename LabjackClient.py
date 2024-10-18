@@ -15,10 +15,17 @@ class LabJackT7Driver:
         self.num_analog_inputs = 16  # Default for 16 analog inputs
         self.channel_rms_flags = {}  # Store per-channel RMS flags
         self.channel_types = {}  # Store channel measurement types (single-ended or differential)
+        self.channel_scaling_factors = {}  # Store per-channel scaling factors
         self.voltage_range = voltage_range
         self.ip_address = ip_address
         self.connection_type = connection_type
         self.resolution_index = 0  # Auto-resolution by default
+
+
+    def set_scaling_factor(self, channel, scaling_factor):
+        self.channel_scaling_factors[channel] = scaling_factor
+        logging.info(f"Set scaling factor for AIN{channel} to {scaling_factor}")
+
 
     def start(self):
         try:
@@ -111,34 +118,51 @@ class LabJackT7Driver:
         
         self.channel_rms_flags[channel] = rms_enabled
 
-    def read_samples(self):
-        """
-        Read samples from the LabJack device. Uses built-in FlexRMS if enabled.
-        Ensures that FlexRMS values are always non-negative.
-        Handles LJMError 2588 (AIN_EF_COULD_NOT_FIND_PERIOD) by returning a default value (e.g., 0) if no period is found.
-        """
-        results = {}
+ def read_samples(self):
 
-        for channel in range(self.num_analog_inputs):
-            try:
-                if self.channel_rms_flags.get(channel, False):
-                    # Try to read FlexRMS value from the AIN#_EF_READ_A register
-                    try:
-                        value = ljm.eReadName(self.handle, f"AIN{channel}_EF_READ_A")
-                        logging.info(f"Read FlexRMS value for AIN{channel}: {value}")
-                        value = abs(value)  # Ensure the FlexRMS value is non-negative
-                    except ljm.LJMError as e:
-                        if e.error == 2588:  # Handle AIN_EF_COULD_NOT_FIND_PERIOD
-                            logging.warning(f"Could not find valid FlexRMS period for AIN{channel}. Returning 0.")
-                            value = 0  # Return 0 or a default value
-                        else:
-                            raise e  # Re-raise other errors
-                else:
-                    # Read normal voltage value
-                    value = ljm.eReadName(self.handle, f"AIN{channel}")
-                    logging.info(f"Read value for AIN{channel}: {value}")
-                results[f"AIN{channel}"] = value
-            except ljm.LJMError as e:
-                raise Exception(f"Failed to read samples for AIN{channel}: {e}")
-        
-        return results
+    results = {}
+
+    for channel in range(self.num_analog_inputs):
+        try:
+            if self.channel_rms_flags.get(channel, False):
+                # Try to read FlexRMS value from the AIN#_EF_READ_A register
+                try:
+                    value = ljm.eReadName(self.handle, f"AIN{channel}_EF_READ_A")
+                    logging.info(f"Read FlexRMS value for AIN{channel}: {value}")
+                    value = abs(value)  # Ensure the FlexRMS value is non-negative
+                except ljm.LJMError as e:
+                    if "AIN_EF_COULD_NOT_FIND_PERIOD" in str(e):
+                        logging.warning(f"Could not find valid FlexRMS period for AIN{channel}. Returning 0.")
+                        value = 0  # Return 0 or a default value
+                    else:
+                        raise e  # Re-raise other errors
+            else:
+                # Read normal voltage value
+                value = ljm.eReadName(self.handle, f"AIN{channel}")
+                logging.info(f"Read value for AIN{channel}: {value}")
+
+            # Apply the scaling factor if it exists
+            scaling_factor = self.channel_scaling_factors.get(channel, 1)
+            value *= scaling_factor
+
+            results[f"AIN{channel}"] = value
+
+        except ljm.LJMError as e:
+            logging.error(f"Error encountered while reading from AIN{channel}: {e}")
+            # Restart the device to recover from the error
+            self.restart_device()
+            break  # Exit the loop to avoid further issues in this read cycle
+
+    return results
+
+def restart_device(self):
+    """
+    Attempt to restart the LabJack device connection.
+    """
+    try:
+        logging.info("Restarting LabJack connection...")
+        self.close()  # Close the existing connection
+        self.start()  # Re-open the connection
+        logging.info("LabJack connection restarted successfully.")
+    except ljm.LJMError as e:
+        logging.error(f"Failed to restart LabJack connection: {e}")
