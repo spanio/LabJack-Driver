@@ -118,7 +118,7 @@ class LabJackT7Driver:
         
         self.channel_rms_flags[channel] = rms_enabled
 
- def read_samples(self):
+    def read_samples(self):
 
     results = {}
 
